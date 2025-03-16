@@ -2,52 +2,78 @@ package price_analysis
 
 import (
 	"fmt"
-	"math"
+	"mamonolitmvp/internal/math/fractal_analysis"
 )
 
-type PriceAnalysis struct{}
-
-func NewRsi() *PriceAnalysis {
-	return &PriceAnalysis{}
+type PriceAnalysis struct {
+	ShortSmaPeriod int
+	LongSmaPeriod  int
+	RSIPeriod      int
+	BoxSize        int
+	fa             *fractal_analysis.FractalDimension
 }
 
-func (p *PriceAnalysis) CalculateRSI(prices []float64, period int) (float64, error) {
+func NewPriceAnalysis(shortSmaPeriod, longSmaPeriod, rsiPeriod int) *PriceAnalysis {
+	return &PriceAnalysis{
+		ShortSmaPeriod: shortSmaPeriod,
+		LongSmaPeriod:  longSmaPeriod,
+		RSIPeriod:      rsiPeriod,
+		fa:             fractal_analysis.NewFractalDimension(),
+	}
+}
+
+func (p *PriceAnalysis) CalculateRSI(prices []float64) ([]float64, error) {
 	if len(prices) == 0 {
-		return math.NaN(), fmt.Errorf("price data is empty")
+		return nil, fmt.Errorf("price data is empty")
 	}
-	if len(prices) < period+1 {
-		return math.NaN(), fmt.Errorf("not enough data to calculate RSI with period %d", period)
-	}
-
-	changes := make([]float64, len(prices)-1)
-	for i := range changes {
-		changes[i] = prices[i+1] - prices[i]
+	if len(prices) < p.RSIPeriod+1 {
+		return nil, fmt.Errorf("not enough data to calculate RSI with period %d", p.RSIPeriod)
 	}
 
-	gains := make([]float64, len(changes))
-	losses := make([]float64, len(changes))
-	for i, change := range changes {
-		if change >= 0 {
-			gains[i] = change
+	gains := make([]float64, len(prices)-1)
+	losses := make([]float64, len(prices)-1)
+
+	for i := 1; i < len(prices); i++ {
+		diff := prices[i] - prices[i-1]
+		if diff > 0 {
+			gains[i-1] = diff
 		} else {
-			losses[i] = math.Abs(change)
+			losses[i-1] = -diff
 		}
 	}
 
-	avgGain := p.Average(gains[:period])
-	avgLoss := p.Average(losses[:period])
-	rs := avgGain / avgLoss
-	var rsi float64
+	rsiValues := make([]float64, len(prices)-p.RSIPeriod)
+	avgGain := sum(gains[:p.RSIPeriod]) / float64(p.RSIPeriod)
+	avgLoss := sum(losses[:p.RSIPeriod]) / float64(p.RSIPeriod)
+
 	if avgLoss == 0 {
-		if avgGain == 0 {
-			rsi = 50
-		} else {
-			rsi = 100
-		}
+		rsiValues[0] = 100.0
 	} else {
-		rsi = 100 - (100 / (1 + rs))
+		rs := avgGain / avgLoss
+		rsiValues[0] = 100 - (100 / (1 + rs))
 	}
-	return rsi, nil
+
+	for i := p.RSIPeriod; i < len(prices)-1; i++ {
+		avgGain = (avgGain*(float64(p.RSIPeriod-1)) + gains[i-1]) / float64(p.RSIPeriod)
+		avgLoss = (avgLoss*(float64(p.RSIPeriod-1)) + losses[i-1]) / float64(p.RSIPeriod)
+
+		if avgLoss == 0 {
+			rsiValues[i-p.RSIPeriod+1] = 100.0
+		} else {
+			rs := avgGain / avgLoss
+			rsiValues[i-p.RSIPeriod+1] = 100 - (100 / (1 + rs))
+		}
+	}
+
+	return rsiValues, nil
+}
+
+func sum(values []float64) float64 {
+	total := 0.0
+	for _, v := range values {
+		total += v
+	}
+	return total
 }
 
 func (p *PriceAnalysis) Average(numbers []float64) float64 {
@@ -56,4 +82,23 @@ func (p *PriceAnalysis) Average(numbers []float64) float64 {
 		sum += number
 	}
 	return sum / float64(len(numbers))
+}
+
+func (p *PriceAnalysis) AnalyzeTrendWithRSI(prices []float64) string {
+	rsiValues, err := p.CalculateRSI(prices)
+	if err != nil {
+		return fmt.Sprintf("Error calculating RSI: %v", err)
+	}
+
+	latestRSI := rsiValues[len(rsiValues)-1]
+
+	if latestRSI > 70 {
+		return "Strong Uptrend"
+	} else if latestRSI < 30 {
+		return "Strong Downtrend"
+	} else if latestRSI > 40 && latestRSI < 60 {
+		return "Flat Market"
+	}
+
+	return "Neutral"
 }

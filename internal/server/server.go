@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"mamonolitmvp/config"
+	"mamonolitmvp/internal/handlers/analyzer"
 	"mamonolitmvp/internal/handlers/etl"
 	"mamonolitmvp/internal/repository"
 	"mamonolitmvp/internal/services"
@@ -54,11 +55,13 @@ func (s *Server) initializeRepository(db *gorm.DB) *repository.InstrumentReposit
 
 func (s *Server) registerRoutes(instrumentRepository *repository.InstrumentRepository) {
 	service := services.NewTinkoffService(s.cfg, instrumentRepository)
-	handler := etl.NewETLHandler(service)
+	etlHandler := etl.NewETLHandler(service)
+	signalHandler := analyzer.NewSignalHandler(service)
 
-	s.e.GET("/api/v1/ti/getClosePrices", handler.GetClosePricesHandler)
-	s.e.GET("/api/v1/ti/getBonds", handler.GetAllBonds)
-	s.e.GET("/api/v1/ti/getCandles", handler.GetCandles)
+	s.e.GET("/api/v1/ti/getClosePrices", etlHandler.GetClosePricesHandler)
+	s.e.GET("/api/v1/ti/getBonds", etlHandler.GetAllBonds)
+	s.e.GET("/api/v1/ti/getCandles", etlHandler.GetCandles)
+	s.e.GET("/api/v1/sig/getSignals", signalHandler.GetSignals)
 
 	dbHandler := etl.NewDBHandler(instrumentRepository)
 	s.e.GET("/api/v1/db/getInstrumentIDs", dbHandler.GetInstrumentUIDAndFigi)

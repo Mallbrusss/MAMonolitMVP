@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"mamonolitmvp/config"
+	"mamonolitmvp/internal/math/price_analysis"
 	"mamonolitmvp/internal/models"
 	"mamonolitmvp/pkg/http_client"
 )
@@ -14,6 +15,7 @@ type TinkoffService struct {
 	Client *http_client.HTTPClient
 	Config *config.Config
 	is     *InstrumentService
+	pa     *price_analysis.PriceAnalysis
 }
 
 func NewTinkoffService(cfg *config.Config, repo InstrumentRepository) *TinkoffService {
@@ -21,6 +23,7 @@ func NewTinkoffService(cfg *config.Config, repo InstrumentRepository) *TinkoffSe
 		Client: http_client.NewHTTPClient(),
 		Config: cfg,
 		is:     NewInstrumentService(repo),
+		pa:     price_analysis.NewPriceAnalysis(cfg.ShortSmaInterval, cfg.LongSmaInterval, cfg.RSIInterval),
 	}
 }
 
@@ -103,10 +106,10 @@ func (s *TinkoffService) GetCandles(instrumentInfo map[string]any) ([]models.His
 		return nil, err
 	}
 
-	err = s.is.CreateCandles(response.Candles)
-	if err != nil {
-		return nil, err
-	}
+	//err = s.is.CreateCandles(response.Candles)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return response.Candles, nil
 }

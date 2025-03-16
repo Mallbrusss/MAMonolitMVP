@@ -1,10 +1,20 @@
-// Package price_analysis include RSI, SMA, Fractal Dimension
-package price_analysis
+package fractal_analysis
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
-// CalculateFractalDimension вычисляет фрактальную размерность методом Бокса
-func CalculateFractalDimension(prices []float64, boxSize int) float64 {
+type FractalDimension struct {
+}
+
+func NewFractalDimension() *FractalDimension {
+	return &FractalDimension{}
+}
+
+// CalculateFractalDimension вычисляет фрактальную размерность методом FractalDimension
+func (p *FractalDimension) CalculateFractalDimension(prices []float64) float64 {
+	boxSize := p.determineNumBoxes(prices)
 	if len(prices) == 0 || boxSize <= 0 {
 		return 0
 	}
@@ -38,23 +48,60 @@ func CalculateFractalDimension(prices []float64, boxSize int) float64 {
 }
 
 // FindFractals находит фракталы (пик и долина) в массиве цен
-func FindFractals(prices []float64) ([]int, []int) {
-	var peaks []int
-	var valleys []int
+func (p *FractalDimension) FindFractals(prices []float64) ([]float64, []float64) {
+	var peaks []float64
+	var valleys []float64
 
 	for i := 2; i < len(prices)-2; i++ {
 		// Проверяем условие для пика
 		if prices[i] > prices[i-1] && prices[i] > prices[i+1] &&
 			prices[i] > prices[i-2] && prices[i] > prices[i+2] {
-			peaks = append(peaks, i)
+			peaks = append(peaks, prices[i])
 		}
 
 		// Проверяем условие для долины
 		if prices[i] < prices[i-1] && prices[i] < prices[i+1] &&
 			prices[i] < prices[i-2] && prices[i] < prices[i+2] {
-			valleys = append(valleys, i)
+			valleys = append(valleys, prices[i])
 		}
 	}
 
 	return peaks, valleys
+}
+
+func (p *FractalDimension) AnalyzeFractals(prices []float64) string {
+	peaks, valleys := p.FindFractals(prices)
+
+	if len(peaks) > len(valleys) {
+		return "Strong Uptrend"
+	} else if len(peaks) < len(valleys) {
+		return "Strong Downtrend"
+	} else {
+		return "Flat"
+	}
+}
+
+func (p *FractalDimension) determineNumBoxes(prices []float64) int {
+	if len(prices) < 5 {
+		return 1
+	}
+
+	var percentage float64
+	if len(prices) < 50 {
+		percentage = 0.1
+	} else {
+		percentage = 0.4
+	}
+
+	numBoxes := int(float64(len(prices)) * percentage)
+
+	if numBoxes < 5 {
+		numBoxes = 5
+	}
+
+	fmt.Println("```````````Len:   ", len(prices))
+	fmt.Println("!!!!!!!!!NUMBOXES:   ", numBoxes)
+	fmt.Println("=========Last Price:   ", prices[len(prices)-1])
+
+	return numBoxes
 }
