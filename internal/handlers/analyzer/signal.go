@@ -47,14 +47,18 @@ func (h *Signal) GetSignals(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"ticker":            ticker,
-		"normal RSI":        signal.NormRSI,
-		"Fractal dimension": signal.FractalDimension,
-		"Peaks":             signal.Peaks,
-		"Valleys":           signal.Valleys,
-		"ShortSMA":          signal.ShortSMA,
-		"Long SMA":          signal.LongSMA,
-		"Trend factor":      signal.TrendFactor,
-		"Total signal":      signal.TotalSignal,
+		"ticker": ticker,
+		"Hurst":  signal.Hurst,
+		"MDFA": map[string]any{
+			"LogFq": signal.LogFq,
+			"Hq":    signal.Hq,
+			"LogS":  signal.LogS,
+		},
+		"MFSpectrum": map[string]any{
+			"Qsorted": signal.Qsorted,
+			"Tau":     signal.Tau,
+			"Alpha":   signal.Alpha,
+			"FAlpha":  signal.FAlpha,
+		},
 	})
 }

@@ -23,7 +23,7 @@ func NewTinkoffService(cfg *config.Config, repo InstrumentRepository) *TinkoffSe
 		Client: http_client.NewHTTPClient(),
 		Config: cfg,
 		is:     NewInstrumentService(repo),
-		pa:     price_analysis.NewPriceAnalysis(cfg.ShortSmaInterval, cfg.LongSmaInterval, cfg.RSIInterval),
+		pa:     price_analysis.NewPriceAnalysis(),
 	}
 }
 

@@ -3,99 +3,77 @@ package price_analysis
 import (
 	"errors"
 	"fmt"
-	"math"
+	"mamonolitmvp/internal/math/fractal_analysis"
 )
 
 type Signal struct {
-	NormRSI          float64
-	FractalDimension float64
-	Peaks            []float64
-	Valleys          []float64
-	ShortSMA         float64
-	LongSMA          float64
-	TrendFactor      float64
-	TotalSignal      float64
+	Hurst float64
+	Mfdfa
+	MfSpectrum
 }
 
-const tolerance = 0.02
+type Mfdfa struct {
+	LogFq map[string][]float64
+	Hq    map[string]float64
+	LogS  map[string]float64
+}
+
+type MfSpectrum struct {
+	Qsorted []float64
+	Tau     []float64
+	Alpha   []float64
+	FAlpha  []float64
+}
+
+type PriceAnalysis struct {
+	fa *fractal_analysis.FractalDimension
+}
+
+func NewPriceAnalysis() *PriceAnalysis {
+	return &PriceAnalysis{
+		fa: fractal_analysis.NewFractalDimension(),
+	}
+}
 
 func (p *PriceAnalysis) TotalSignal(prices []float64) (Signal, error) {
 	if len(prices) == 0 {
 		return Signal{}, errors.New("no prices provided")
 	}
 
-	fractalDimension := p.CalculateFractalDimension(prices)
-	rsi, err := p.CalculateRSI(prices)
-	if err != nil {
-		return Signal{}, err
-	}
-	if len(rsi) == 0 {
-		return Signal{}, fmt.Errorf("RSI calculation failed or returned no values")
-	}
+	hurst := p.fa.HurstExponent(prices)
 
-	smaShort, err := p.CalculateShortMovingAverage(prices)
-	if err != nil {
-		return Signal{}, err
+	qList := []float64{-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5} // Значения q
+	scaleMin, scaleMax, scaleStep := 10, 100, 10             // Масштабы для анализа
+	degree := 2
+	logFq, hq, logS := p.fa.MFDFA(prices, qList, scaleMin, scaleMax, scaleStep, degree)
+
+	qSorted, tau, alpha, fAlpha := p.fa.CalcMultifractalSpectrum(hq)
+
+	stringLogFq := make(map[string][]float64)
+	for k, v := range logFq {
+		key := fmt.Sprintf("%v", k)
+		stringLogFq[key] = v
 	}
-	if len(smaShort) == 0 {
-		return Signal{}, fmt.Errorf("failed to calculate short SMA")
+	hqString := make(map[string]float64)
+	for k, v := range hq {
+		key := fmt.Sprintf("%v", k)
+		hqString[key] = v
 	}
-
-	smaLong, err := p.CalculateLongMovingAverage(prices)
-	if err != nil {
-		return Signal{}, err
-	}
-	if len(smaLong) == 0 {
-		return Signal{}, fmt.Errorf("failed to calculate long SMA")
-	}
-
-	normRSI := rsi[len(rsi)-1] / 100
-
-	if smaLong[len(smaLong)-1] == 0 {
-		return Signal{}, fmt.Errorf("long SMA is zero, cannot calculate trend factor")
-	}
-	trendFactor := (smaShort[len(smaShort)-1] - smaLong[len(smaLong)-1]) / smaLong[len(smaLong)-1]
-
-	peaks, valleys := p.FindFractals(prices)
-
-	currentPrice := prices[len(prices)-1]
-	var fractalAdjustment float64 = 1.0
-
-	for _, peak := range peaks {
-		if peak != 0 {
-			distance := math.Abs((currentPrice - peak) / peak)
-			if distance <= tolerance {
-				fractalAdjustment = 0.4 + 0.4*(distance/tolerance)
-				break
-			}
-		}
-	}
-
-	for _, valley := range valleys {
-		if valley != 0 {
-			distance := math.Abs((currentPrice - valley) / valley)
-			if distance <= tolerance {
-				fractalAdjustment = 0.8 + 0.4*(distance/tolerance)
-				break
-			}
-		}
-	}
-
-	totalSignal := (2 - fractalDimension) * (normRSI + trendFactor) * fractalAdjustment
 
 	signal := Signal{
-		NormRSI:          normRSI,
-		FractalDimension: fractalDimension,
-		Peaks:            peaks,
-		Valleys:          valleys,
-		ShortSMA:         smaShort[len(smaShort)-1],
-		LongSMA:          smaLong[len(smaLong)-1],
-		TrendFactor:      trendFactor,
-		TotalSignal:      totalSignal,
+		Hurst: hurst,
+		Mfdfa: Mfdfa{
+			LogFq: stringLogFq,
+			Hq:    hqString,
+			LogS:  logS,
+		},
+		MfSpectrum: MfSpectrum{
+			Qsorted: qSorted,
+			Tau:     tau,
+			Alpha:   alpha,
+			FAlpha:  fAlpha,
+		},
 	}
-
-	fmt.Printf("RSI: %.4f, Fractal Dimension: %.4f, Peaks: %.4f, Vallyes: %.4f, Short SMA: %.4f, Long SMA: %.4f, Trend Factor: %.4f, Signal: %.4f\n",
-		normRSI, fractalDimension, peaks, valleys, smaShort[len(smaShort)-1], smaLong[len(smaLong)-1], trendFactor, totalSignal)
 
 	return signal, nil
 }
