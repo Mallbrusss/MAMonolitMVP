@@ -7,7 +7,10 @@ import (
 )
 
 type Signal struct {
-	Hurst float64
+	ShortSMA    []float64
+	LongSMA     []float64
+	TrendFactor float64
+	Hurst       float64
 	Mfdfa
 	MfSpectrum
 }
@@ -26,12 +29,16 @@ type MfSpectrum struct {
 }
 
 type PriceAnalysis struct {
-	fa *fractal_analysis.FractalDimension
+	fa             *fractal_analysis.FractalDimension
+	ShortSmaPeriod int
+	LongSmaPeriod  int
 }
 
 func NewPriceAnalysis() *PriceAnalysis {
 	return &PriceAnalysis{
-		fa: fractal_analysis.NewFractalDimension(),
+		fa:             fractal_analysis.NewFractalDimension(),
+		ShortSmaPeriod: 50,
+		LongSmaPeriod:  100,
 	}
 }
 
@@ -60,8 +67,31 @@ func (p *PriceAnalysis) TotalSignal(prices []float64) (Signal, error) {
 		hqString[key] = v
 	}
 
+	smaShort, err := p.CalculateShortMovingAverage(prices)
+	if err != nil {
+		return Signal{}, err
+	}
+	if len(smaShort) == 0 {
+		return Signal{}, fmt.Errorf("failed to calculate short SMA")
+	}
+
+	smaLong, err := p.CalculateLongMovingAverage(prices)
+	if err != nil {
+		return Signal{}, err
+	}
+	if len(smaLong) == 0 {
+		return Signal{}, fmt.Errorf("failed to calculate long SMA")
+	}
+
+	trendFactor := (smaShort[len(smaShort)-1] - smaLong[len(smaLong)-1]) / smaLong[len(smaLong)-1]
+	fmt.Printf("Short SMA: %.4f, Long SMA: %.4f, Trend Factor: %.4f",
+		smaShort[len(smaShort)-1], smaLong[len(smaLong)-1], trendFactor)
+
 	signal := Signal{
-		Hurst: hurst,
+		ShortSMA:    smaShort,
+		LongSMA:     smaLong,
+		TrendFactor: trendFactor,
+		Hurst:       hurst,
 		Mfdfa: Mfdfa{
 			LogFq: stringLogFq,
 			Hq:    hqString,

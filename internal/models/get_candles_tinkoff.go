@@ -10,6 +10,10 @@ type GetCandlesRequest struct {
 	//
 	// CANDLE_INTERVAL_1_MIN от 1 минуты до 1 дня.
 	//
+	// CANDLE_INTERVAL_2_MIN от 2 минут до 1 дня.
+	//
+	// CANDLE_INTERVAL_3_MIN от 3 минут до 1 дня.
+	//
 	// CANDLE_INTERVAL_5_MIN от 5 минут до 1 дня.
 	//
 	// CANDLE_INTERVAL_15_MIN от 15 минут до 1 дня.
@@ -17,10 +21,6 @@ type GetCandlesRequest struct {
 	// CANDLE_INTERVAL_HOUR от 1 часа до 1 недели.
 	//
 	// CANDLE_INTERVAL_DAY от 1 дня до 1 года.
-	//
-	// CANDLE_INTERVAL_2_MIN от 2 минут до 1 дня.
-	//
-	// CANDLE_INTERVAL_3_MIN от 3 минут до 1 дня.
 	//
 	// CANDLE_INTERVAL_10_MIN от 10 минут до 1 дня.
 	//

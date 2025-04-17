@@ -13,6 +13,7 @@ import (
 	"mamonolitmvp/internal/repository"
 	"mamonolitmvp/internal/services"
 	"mamonolitmvp/internal/storage/timescale"
+	"net/http"
 )
 
 type Server struct {
@@ -31,6 +32,11 @@ func NewServer() *Server {
 func (s *Server) initializeMiddleware() {
 	s.e.Use(middleware.Logger())
 	s.e.Use(middleware.Recover())
+	s.e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete},
+	}))
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {

@@ -7,60 +7,59 @@ package price_analysis
 //)
 //
 
-//
-//func (p *PriceAnalysis) CalculateRSI(prices []float64) ([]float64, error) {
-//	if len(prices) == 0 {
-//		return nil, fmt.Errorf("price data is empty")
-//	}
-//	if len(prices) < p.RSIPeriod+1 {
-//		return nil, fmt.Errorf("not enough data to calculate RSI with period %d", p.RSIPeriod)
-//	}
-//
-//	gains := make([]float64, len(prices)-1)
-//	losses := make([]float64, len(prices)-1)
-//
-//	for i := 1; i < len(prices); i++ {
-//		diff := prices[i] - prices[i-1]
-//		if diff > 0 {
-//			gains[i-1] = diff
-//		} else {
-//			losses[i-1] = -diff
+//	func (p *PriceAnalysis) CalculateRSI(prices []float64) ([]float64, error) {
+//		if len(prices) == 0 {
+//			return nil, fmt.Errorf("price data is empty")
 //		}
-//	}
+//		if len(prices) < p.RSIPeriod+1 {
+//			return nil, fmt.Errorf("not enough data to calculate RSI with period %d", p.RSIPeriod)
+//		}
 //
-//	rsiValues := make([]float64, len(prices)-p.RSIPeriod)
-//	avgGain := sum(gains[:p.RSIPeriod]) / float64(p.RSIPeriod)
-//	avgLoss := sum(losses[:p.RSIPeriod]) / float64(p.RSIPeriod)
+//		gains := make([]float64, len(prices)-1)
+//		losses := make([]float64, len(prices)-1)
 //
-//	if avgLoss == 0 {
-//		rsiValues[0] = 100.0
-//	} else {
-//		rs := avgGain / avgLoss
-//		rsiValues[0] = 100 - (100 / (1 + rs))
-//	}
+//		for i := 1; i < len(prices); i++ {
+//			diff := prices[i] - prices[i-1]
+//			if diff > 0 {
+//				gains[i-1] = diff
+//			} else {
+//				losses[i-1] = -diff
+//			}
+//		}
 //
-//	for i := p.RSIPeriod; i < len(prices)-1; i++ {
-//		avgGain = (avgGain*(float64(p.RSIPeriod-1)) + gains[i-1]) / float64(p.RSIPeriod)
-//		avgLoss = (avgLoss*(float64(p.RSIPeriod-1)) + losses[i-1]) / float64(p.RSIPeriod)
+//		rsiValues := make([]float64, len(prices)-p.RSIPeriod)
+//		avgGain := sum(gains[:p.RSIPeriod]) / float64(p.RSIPeriod)
+//		avgLoss := sum(losses[:p.RSIPeriod]) / float64(p.RSIPeriod)
 //
 //		if avgLoss == 0 {
-//			rsiValues[i-p.RSIPeriod+1] = 100.0
+//			rsiValues[0] = 100.0
 //		} else {
 //			rs := avgGain / avgLoss
-//			rsiValues[i-p.RSIPeriod+1] = 100 - (100 / (1 + rs))
+//			rsiValues[0] = 100 - (100 / (1 + rs))
 //		}
-//	}
 //
-//	return rsiValues, nil
-//}
+//		for i := p.RSIPeriod; i < len(prices)-1; i++ {
+//			avgGain = (avgGain*(float64(p.RSIPeriod-1)) + gains[i-1]) / float64(p.RSIPeriod)
+//			avgLoss = (avgLoss*(float64(p.RSIPeriod-1)) + losses[i-1]) / float64(p.RSIPeriod)
 //
-//func sum(values []float64) float64 {
-//	total := 0.0
-//	for _, v := range values {
-//		total += v
+//			if avgLoss == 0 {
+//				rsiValues[i-p.RSIPeriod+1] = 100.0
+//			} else {
+//				rs := avgGain / avgLoss
+//				rsiValues[i-p.RSIPeriod+1] = 100 - (100 / (1 + rs))
+//			}
+//		}
+//
+//		return rsiValues, nil
 //	}
-//	return total
-//}
+func sum(values []float64) float64 {
+	total := 0.0
+	for _, v := range values {
+		total += v
+	}
+	return total
+}
+
 //
 //func (p *PriceAnalysis) Average(numbers []float64) float64 {
 //	sum := 0.0

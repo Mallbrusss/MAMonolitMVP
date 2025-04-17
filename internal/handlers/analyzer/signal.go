@@ -47,8 +47,11 @@ func (h *Signal) GetSignals(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"ticker": ticker,
-		"Hurst":  signal.Hurst,
+		"ShortSma":    signal.ShortSMA[len(signal.ShortSMA)-1],
+		"LongSma":     signal.LongSMA[len(signal.LongSMA)-1],
+		"TrendFactor": signal.TrendFactor,
+		"ticker":      ticker,
+		"Hurst":       signal.Hurst,
 		"MDFA": map[string]any{
 			"LogFq": signal.LogFq,
 			"Hq":    signal.Hq,
