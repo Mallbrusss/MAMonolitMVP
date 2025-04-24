@@ -61,48 +61,48 @@ func (ir *InstrumentRepository) CreateInstruments(instruments []models.Placement
 	return nil
 }
 
-//func (ir *InstrumentRepository) CreateCandles(candles []models.HistoricCandle) error {
-//	batchSize := 100
-//
-//	for i := 0; i < len(candles); i += batchSize {
-//		end := i + batchSize
-//		if end > len(candles) {
-//			end = len(candles)
-//		}
-//
-//		batch := make([]*models.HistoricCandle, end-i)
-//		for j := 0; j < len(batch); j++ {
-//			batch[j] = &candles[i+j]
-//		}
-//
-//		tx := ir.db.Begin()
-//		if tx.Error != nil {
-//			log.Printf("failed to start transaction: %v", tx.Error)
-//			return tx.Error
-//		}
-//
-//		batchNumber := (i / batchSize) + 1
-//		totalBatches := (len(candles) + batchSize - 1) / batchSize
-//
-//		log.Printf("Create batch %d of %d", batchNumber, totalBatches)
-//
-//		err := tx.Create(&batch).Error
-//		if err != nil {
-//			tx.Rollback()
-//			log.Printf("failed to insert batch: %v", err)
-//			return err
-//		}
-//
-//		if err := tx.Commit().Error; err != nil {
-//			tx.Rollback()
-//			log.Printf("failed to commit transaction: %v", err)
-//			return err
-//		}
-//	}
-//
-//	log.Println("Candles create success")
-//	return nil
-//}
+func (ir *InstrumentRepository) CreateCandles(candles []models.HistoricCandle) error {
+	batchSize := 100
+
+	for i := 0; i < len(candles); i += batchSize {
+		end := i + batchSize
+		if end > len(candles) {
+			end = len(candles)
+		}
+
+		batch := make([]*models.HistoricCandle, end-i)
+		for j := 0; j < len(batch); j++ {
+			batch[j] = &candles[i+j]
+		}
+
+		tx := ir.db.Begin()
+		if tx.Error != nil {
+			log.Printf("failed to start transaction: %v", tx.Error)
+			return tx.Error
+		}
+
+		batchNumber := (i / batchSize) + 1
+		totalBatches := (len(candles) + batchSize - 1) / batchSize
+
+		log.Printf("Create batch %d of %d", batchNumber, totalBatches)
+
+		err := tx.Create(&batch).Error
+		if err != nil {
+			tx.Rollback()
+			log.Printf("failed to insert batch: %v", err)
+			return err
+		}
+
+		if err := tx.Commit().Error; err != nil {
+			tx.Rollback()
+			log.Printf("failed to commit transaction: %v", err)
+			return err
+		}
+	}
+
+	log.Println("Candles create success")
+	return nil
+}
 
 func (ir *InstrumentRepository) GetInstrumentUIDAndFigi(ticker string) (models.Ids, error) {
 	var ids models.Ids

@@ -6,6 +6,7 @@ import (
 	"mamonolitmvp/config"
 	"mamonolitmvp/internal/math/price_analysis"
 	"mamonolitmvp/internal/models"
+	"mamonolitmvp/internal/repository"
 	"mamonolitmvp/pkg/http_client"
 )
 
@@ -18,7 +19,7 @@ type TinkoffService struct {
 	pa     *price_analysis.PriceAnalysis
 }
 
-func NewTinkoffService(cfg *config.Config, repo InstrumentRepository) *TinkoffService {
+func NewTinkoffService(cfg *config.Config, repo *repository.InstrumentRepository) *TinkoffService {
 	return &TinkoffService{
 		Client: http_client.NewHTTPClient(),
 		Config: cfg,
@@ -106,10 +107,10 @@ func (s *TinkoffService) GetCandles(instrumentInfo map[string]any) ([]models.His
 		return nil, err
 	}
 
-	//err = s.is.CreateCandles(response.Candles)
-	//if err != nil {
-	//	return nil, err
-	//}
+	err = s.is.CreateCandles(response.Candles)
+	if err != nil {
+		return nil, err
+	}
 
 	return response.Candles, nil
 }

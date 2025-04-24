@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func (s *TinkoffService) GetTotalSignal(instrumentInfo map[string]any) (string, price_analysis.Signal, error) {
+func (s *TinkoffService) GetTotalSignal(instrumentInfo map[string]any) (string, price_analysis.Signal, []price_analysis.Fdi, []float64, error) {
 	reqBody := models.GetCandlesRequest{
 		Figi:         instrumentInfo["figi"].(string),
 		From:         instrumentInfo["from"].(string),
@@ -36,7 +36,7 @@ func (s *TinkoffService) GetTotalSignal(instrumentInfo map[string]any) (string, 
 		locPrice := fmt.Sprintf("%s.%d", locUnit, locNano)
 		priceValue, err := strconv.ParseFloat(locPrice, 64)
 		if err != nil {
-			return "", price_analysis.Signal{}, err
+			return "", price_analysis.Signal{}, nil, nil, err
 		}
 
 		prices = append(prices, priceValue)
@@ -44,13 +44,18 @@ func (s *TinkoffService) GetTotalSignal(instrumentInfo map[string]any) (string, 
 
 	sig, err := s.pa.TotalSignal(prices)
 	if err != nil {
-		return "", price_analysis.Signal{}, err
+		return "", price_analysis.Signal{}, nil, nil, err
+	}
+
+	fdi, hurstSeries, err := s.pa.SlidingWindowAnalysis(prices, 100)
+	if err != nil {
+		return "", price_analysis.Signal{}, nil, nil, err
 	}
 
 	ticker, err := s.is.instrumentRepository.GetTicker(instrumentInfo["instrumentId"].(string))
 	if err != nil {
-		return "", price_analysis.Signal{}, err
+		return "", price_analysis.Signal{}, nil, nil, err
 	}
 
-	return ticker, sig, err
+	return ticker, sig, fdi, hurstSeries, err
 }

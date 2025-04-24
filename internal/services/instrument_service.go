@@ -7,7 +7,7 @@ import (
 type InstrumentRepository interface {
 	CreateInstruments(instruments []models.PlacementPrice) error
 	GetTicker(instrumentUID string) (string, error)
-	//CreateCandles(candles []models.HistoricCandle) error
+	CreateCandles(candles []models.HistoricCandle) error
 }
 
 type InstrumentService struct {
@@ -24,6 +24,6 @@ func (s *InstrumentService) CreateInstruments(instruments []models.PlacementPric
 	return s.instrumentRepository.CreateInstruments(instruments)
 }
 
-//func (s *InstrumentService) CreateCandles(candles []models.HistoricCandle) error {
-//	return s.instrumentRepository.CreateCandles(candles)
-//}
+func (s *InstrumentService) CreateCandles(candles []models.HistoricCandle) error {
+	return s.instrumentRepository.CreateCandles(candles)
+}

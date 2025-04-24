@@ -8,7 +8,7 @@ import (
 )
 
 type StockExchange interface {
-	GetTotalSignal(instrumentInfo map[string]any) (string, price_analysis.Signal, error)
+	GetTotalSignal(instrumentInfo map[string]any) (string, price_analysis.Signal, []price_analysis.Fdi, []float64, error)
 }
 
 type Signal struct {
@@ -38,7 +38,7 @@ func (h *Signal) GetSignals(c echo.Context) error {
 		"instrumentId": req.InstrumentId,
 	}
 
-	ticker, signal, err := h.Service.GetTotalSignal(instrumentInfo)
+	ticker, signal, fdiWind, hurstWind, err := h.Service.GetTotalSignal(instrumentInfo)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": "Failed to fetch all candles",
@@ -47,8 +47,9 @@ func (h *Signal) GetSignals(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"ShortSma":    signal.ShortSMA[len(signal.ShortSMA)-1],
-		"LongSma":     signal.LongSMA[len(signal.LongSMA)-1],
+		"TotalPrices": signal.Total,
+		"ShortSma":    signal.ShortSMA,
+		"LongSma":     signal.LongSMA,
 		"TrendFactor": signal.TrendFactor,
 		"ticker":      ticker,
 		"Hurst":       signal.Hurst,
@@ -62,6 +63,17 @@ func (h *Signal) GetSignals(c echo.Context) error {
 			"Tau":     signal.Tau,
 			"Alpha":   signal.Alpha,
 			"FAlpha":  signal.FAlpha,
+		},
+
+		"FDIAnalysis": map[string]any{
+			"Width":     signal.Width,
+			"Asym":      signal.Asym,
+			"Curvature": signal.Curvature,
+			"FDI":       signal.Fdi,
+		},
+		"Window": map[string]any{
+			"FdiWind":   fdiWind,
+			"HurstWind": hurstWind,
 		},
 	})
 }

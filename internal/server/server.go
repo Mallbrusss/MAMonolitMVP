@@ -9,10 +9,12 @@ import (
 	"log"
 	"mamonolitmvp/config"
 	"mamonolitmvp/internal/handlers/analyzer"
-	"mamonolitmvp/internal/handlers/etl"
 	"mamonolitmvp/internal/repository"
-	"mamonolitmvp/internal/services"
 	"mamonolitmvp/internal/storage/timescale"
+
+	//"mamonolitmvp/internal/repository"
+	"mamonolitmvp/internal/services"
+	//"mamonolitmvp/internal/storage/timescale"
 	"net/http"
 )
 
@@ -59,19 +61,19 @@ func (s *Server) initializeRepository(db *gorm.DB) *repository.InstrumentReposit
 	return repository.NewInstrumentRepository(db)
 }
 
-func (s *Server) registerRoutes(instrumentRepository *repository.InstrumentRepository) {
-	service := services.NewTinkoffService(s.cfg, instrumentRepository)
-	etlHandler := etl.NewETLHandler(service)
+func (s *Server) registerRoutes(repo *repository.InstrumentRepository) {
+	service := services.NewTinkoffService(s.cfg, repo)
+	//etlHandler := etl.NewETLHandler(service)
 	signalHandler := analyzer.NewSignalHandler(service)
 
-	s.e.GET("/api/v1/ti/getClosePrices", etlHandler.GetClosePricesHandler)
-	s.e.GET("/api/v1/ti/getBonds", etlHandler.GetAllBonds)
-	s.e.GET("/api/v1/ti/getCandles", etlHandler.GetCandles)
+	//s.e.GET("/api/v1/ti/getClosePrices", etlHandler.GetClosePricesHandler)
+	//s.e.GET("/api/v1/ti/getBonds", etlHandler.GetAllBonds)
+	//s.e.GET("/api/v1/ti/getCandles", etlHandler.GetCandles)
 	s.e.GET("/api/v1/sig/getSignals", signalHandler.GetSignals)
 
-	dbHandler := etl.NewDBHandler(instrumentRepository)
-	s.e.GET("/api/v1/db/getInstrumentIDs", dbHandler.GetInstrumentUIDAndFigi)
-	s.e.GET("/api/v1/db/getCandles", dbHandler.GetCandles)
+	//dbHandler := etl.NewDBHandler(instrumentRepository)
+	//s.e.GET("/api/v1/db/getInstrumentIDs", dbHandler.GetInstrumentUIDAndFigi)
+	//s.e.GET("/api/v1/db/getCandles", dbHandler.GetCandles)
 
 	log.Printf("Server is running on port %s...", s.cfg.ServerPort)
 }
