@@ -99,7 +99,7 @@ func (p *PriceAnalysis) TotalSignal(prices []float64) (Signal, error) {
 
 	trendFactor := (smaShort[len(smaShort)-1] - smaLong[len(smaLong)-1]) / smaLong[len(smaLong)-1]
 
-	width, asym, curvature, fdi := p.fa.CalcFdi(alpha, fAlpha)
+	width, asym, curvature, fdi := p.fa.CalcFdi(alpha, fAlpha, tau)
 
 	signal := Signal{
 		Total:       len(prices),
