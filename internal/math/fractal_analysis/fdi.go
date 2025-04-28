@@ -102,3 +102,55 @@ func (fa *FractalDimension) CalcFdi(alpha, fAlpha, tau []float64) (float64, floa
 
 	return width, asym, curvature, fdi
 }
+
+func (fa *FractalDimension) CalcNormalizedFdi(alpha, fAlpha, tau []float64) (float64, float64, float64, float64, error) {
+	// Шаг 1: Вычисляем raw значения width, asymmetry и curvature
+	width := calcWidth(alpha)
+	asym := calcAsymmetry(fAlpha)
+	curvature := calcCurvature(tau)
+
+	// Шаг 2: Создаем массивы для нормализации
+	values := []struct {
+		value float64
+	}{
+		{value: width},
+		{value: asym},
+		{value: curvature},
+	}
+
+	// Шаг 3: Нормализуем каждое значение
+	normValues := make([]float64, len(values))
+	minD := values[0].value
+	maxD := values[0].value
+
+	for _, val := range values {
+		if val.value < minD {
+			minD = val.value
+		}
+		if val.value > maxD {
+			maxD = val.value
+		}
+	}
+
+	// Проверяем на случай одинаковых значений
+	if minD == maxD {
+		for i := range normValues {
+			normValues[i] = 0
+		}
+	} else {
+		for i, val := range values {
+			normValues[i] = (val.value - minD) / (maxD - minD)
+		}
+	}
+
+	// Шаг 4: Извлекаем нормализованные значения
+	normWidth := normValues[0]
+	normAsym := normValues[1]
+	normCurvature := normValues[2]
+
+	// Шаг 5: Вычисляем FDI с использованием нормализованных значений
+	w1, w2, w3 := 0.4, 0.3, 0.3
+	normFdi := w1*normWidth + w2*math.Abs(normAsym) + w3*normCurvature
+
+	return normWidth, normAsym, normCurvature, normFdi, nil
+}

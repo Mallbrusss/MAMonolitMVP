@@ -8,7 +8,7 @@ import (
 )
 
 type StockExchange interface {
-	GetTotalSignal(instrumentInfo map[string]any) (string, price_analysis.Signal, []price_analysis.Fdi, []float64, error)
+	GetTotalSignal(instrumentInfo map[string]any) (string, price_analysis.Signal, []price_analysis.Fdi, []price_analysis.NormalizeFdi, []float64, error)
 }
 
 type Signal struct {
@@ -38,7 +38,7 @@ func (h *Signal) GetSignals(c echo.Context) error {
 		"instrumentId": req.InstrumentId,
 	}
 
-	ticker, signal, fdiWind, hurstWind, err := h.Service.GetTotalSignal(instrumentInfo)
+	ticker, signal, fdiWind, normFdiWind, hurstWind, err := h.Service.GetTotalSignal(instrumentInfo)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": "Failed to fetch all candles",
@@ -71,9 +71,16 @@ func (h *Signal) GetSignals(c echo.Context) error {
 			"Curvature": signal.Curvature,
 			"FDI":       signal.Fdi,
 		},
+		"NormFdi": map[string]any{
+			"Width":     signal.NormFdi,
+			"Asym":      signal.NormAsym,
+			"Curvature": signal.NormCurvature,
+			"FDI":       signal.NormFdi,
+		},
 		"Window": map[string]any{
 			"FdiWind":   fdiWind,
 			"HurstWind": hurstWind,
+			"NormFdi":   normFdiWind,
 		},
 	})
 }

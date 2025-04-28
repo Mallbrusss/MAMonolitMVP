@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"mamonolitmvp/internal/math/fractal_analysis"
+	"math"
 )
 
 type Signal struct {
@@ -15,6 +16,7 @@ type Signal struct {
 	Mfdfa
 	MfSpectrum
 	Fdi
+	NormalizeFdi
 }
 
 type Mfdfa struct {
@@ -54,6 +56,13 @@ type Fdi struct {
 	Asym      float64
 	Curvature float64
 	Fdi       float64
+}
+
+type NormalizeFdi struct {
+	NormWidth     float64
+	NormAsym      float64
+	NormCurvature float64
+	NormFdi       float64
 }
 
 func (p *PriceAnalysis) TotalSignal(prices []float64) (Signal, error) {
@@ -101,6 +110,11 @@ func (p *PriceAnalysis) TotalSignal(prices []float64) (Signal, error) {
 
 	width, asym, curvature, fdi := p.fa.CalcFdi(alpha, fAlpha, tau)
 
+	normWidth, normAsym, normCurvature, normFdi, err := p.fa.CalcNormalizedFdi(alpha, fAlpha, tau)
+	if err != nil {
+		return Signal{}, err
+	}
+
 	signal := Signal{
 		Total:       len(prices),
 		ShortSMA:    smaShort,
@@ -124,14 +138,20 @@ func (p *PriceAnalysis) TotalSignal(prices []float64) (Signal, error) {
 			Curvature: curvature,
 			Fdi:       fdi,
 		},
+		NormalizeFdi: NormalizeFdi{
+			NormWidth:     normWidth,
+			NormAsym:      normAsym,
+			NormCurvature: normCurvature,
+			NormFdi:       normFdi,
+		},
 	}
 
 	return signal, nil
 }
 
-func (p *PriceAnalysis) SlidingWindowAnalysis(prices []float64, windowSize int) ([]Fdi, []float64, error) {
+func (p *PriceAnalysis) SlidingWindowAnalysis(prices []float64, windowSize int) ([]Fdi, []NormalizeFdi, []float64, error) {
 	if len(prices) < windowSize {
-		return nil, nil, errors.New("длина данных меньше размера окна")
+		return nil, nil, nil, errors.New("длина данных меньше размера окна")
 	}
 
 	var fdiSeries []Fdi
@@ -142,13 +162,100 @@ func (p *PriceAnalysis) SlidingWindowAnalysis(prices []float64, windowSize int) 
 
 		signal, err := p.TotalSignal(window)
 		if err != nil {
-			return nil, nil, fmt.Errorf("ошибка в окне %d: %w", i, err)
+			return nil, nil, nil, fmt.Errorf("ошибка в окне %d: %w", i, err)
 		}
 
 		fdiSeries = append(fdiSeries, signal.Fdi)
 		hurstSeries = append(hurstSeries, signal.Hurst)
-
+	}
+	normFdi, err := p.CalculateWindoNormalFdi(fdiSeries)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
-	return fdiSeries, hurstSeries, nil
+	return fdiSeries, normFdi, hurstSeries, nil
+}
+
+func (fa *PriceAnalysis) CalculateWindoNormalFdi(fdiList []Fdi) ([]NormalizeFdi, error) {
+	// Extract fields into separate slices
+	widths := make([]float64, len(fdiList))
+	asyms := make([]float64, len(fdiList))
+	curvs := make([]float64, len(fdiList))
+
+	for i, fdi := range fdiList {
+		widths[i] = fdi.Width
+		asyms[i] = fdi.Asym
+		curvs[i] = fdi.Curvature
+	}
+
+	// Define weights
+	w1, w2, w3 := 0.4, 0.3, 0.3
+
+	// Normalize width, asymmetry, and curvature
+	normWidth, err := normalizeValue(widths)
+	if err != nil {
+		return nil, err
+	}
+	normAsym, err := normalizeValue(asyms)
+	if err != nil {
+		return nil, err
+	}
+	normCurv, err := normalizeValue(curvs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Ensure all slices have the same length
+	if len(normWidth) != len(normAsym) || len(normWidth) != len(normCurv) {
+		return nil, fmt.Errorf("input slices must have the same length")
+	}
+
+	// Calculate normalized FDI for each index
+	result := make([]NormalizeFdi, len(fdiList))
+	for i := range normWidth {
+		fdi := NormalizeFdi{
+			NormWidth:     normWidth[i],
+			NormAsym:      normAsym[i],
+			NormCurvature: normCurv[i],
+			NormFdi:       w1*normWidth[i] + w2*math.Abs(normAsym[i]) + w3*normCurv[i],
+		}
+		result[i] = fdi
+	}
+
+	return result, nil
+}
+func normalizeValue(data []float64) ([]float64, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("data slice is empty")
+	}
+
+	minD := data[0]
+	maxD := data[0]
+
+	// Find min and max values
+	for _, value := range data {
+		if value < minD {
+			minD = value
+		}
+		if value > maxD {
+			maxD = value
+		}
+	}
+
+	// If all values are the same, return a slice of zeros
+	if minD == maxD {
+		normalized := make([]float64, len(data))
+		for i := range normalized {
+			normalized[i] = 0
+		}
+		return normalized, nil
+	}
+
+	// Normalize each value
+	normalized := make([]float64, len(data))
+	for i, value := range data {
+		normalized[i] = (value - minD) / (maxD - minD)
+	}
+
+	return normalized, nil
 }
